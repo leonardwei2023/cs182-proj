@@ -29,4 +29,13 @@ train_data[10][0].points # Is in Pandas DataFrame
 
 # Visualizing PyntCloud (Only in notebook)
 train_data[10][0].plot(backend='threejs')
+
+# The visualization might don't work in some enviroments (i.e. binder). Open3d might works for you.
+import open3d as o3d
+
+points = train_data[10][0].points.values
+o3d_cloud = o3d.geometry.PointCloud()
+o3d_cloud.points = o3d.utility.Vector3dVector(points)
+o3d.visualization.draw_geometries([o3d_cloud])
+
 ```
