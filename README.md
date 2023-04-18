@@ -5,7 +5,7 @@
 - [pyntcloud](https://pyntcloud.readthedocs.io/en/latest/installation.html)
 - pandas
 - ipywidgets
-- threejs
+- [Open3D](http://www.open3d.org/)
 - TODO: Add missing packages
 
 ## Datasets
