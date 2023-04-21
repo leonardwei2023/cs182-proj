@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset
 from pyntcloud import PyntCloud
+import matplotlib.pyplot as plt
 
 class ShapeNetDataset(Dataset):
     def __init__(self, root, train=True, n=10000):
@@ -32,16 +33,47 @@ class ShapeNetDataset(Dataset):
         Returns (PyntCloud, label)
         '''
         path, label = self.df.loc[idx, 'path'], self.df.loc[idx, 'label']
-        get_file = lambda p, t: PyntCloud.from_file(os.path.join(self.path, self.classes[label], t, path))
+        get_file = lambda p, t: PyntCloud.from_file(os.path.join(self.path, self.classes[label], t, p))
         test_train = 'train' if self.train else 'test'
         return get_file(path, test_train).get_sample('mesh_random', n=self.n, as_PyntCloud=True), label        
 
 if __name__ == "__main__":
+
+    #create tran/test split
+    print("Creating Test/Train Split")
     train_dataset = ShapeNetDataset('datasets/ModelNet10', train=True)
     test_dataset = ShapeNetDataset('datasets/ModelNet10', train=False)
+    print("Finished Test/Train Split")
+    print("Train Dataset Size:", len(train_dataset))
+    print("Train Dataset Size:", len(test_dataset))
+    print()
 
-    print(len(train_dataset))
-    print(len(test_dataset))
+    #plot histogram of dataset
+    train_class_counts = train_dataset.df['label'].value_counts()
+    test_class_counts = test_dataset.df['label'].value_counts()
 
-    print(train_dataset[10][0].points.boxplot())
-    print(test_dataset[10][0].points.boxplot())
+    x_labels = [train_dataset.classes[label] for label in train_class_counts.index]
+    x = range(len(x_labels))
+
+    plt.bar(x, train_class_counts, label='train', width=0.4)
+    plt.bar([xi + 0.4 for xi in range(len(x_labels))], test_class_counts, label='test', width=0.4)
+    plt.xticks([xi for xi in x], x_labels, rotation=45)
+    plt.ylabel('Number of Samples')
+    plt.title('Train/Test Dataset Contents')
+    plt.legend()
+    
+    #example showing representation of monitor sample
+    for key, value in train_dataset.classes.items():
+        if value == "monitor":
+            label = key
+            break
+
+    idx = train_dataset.df[train_dataset.df['label'] == label].index[0]
+    point_cloud = train_dataset[idx]
+    print(f"Class: monitor")
+    print("example: first point xyz coords")
+    print(point_cloud[0].points.iloc[0])
+    print()
+    
+    #show plot
+    # plt.show()
