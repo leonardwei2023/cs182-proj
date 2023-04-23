@@ -91,6 +91,7 @@ class SegmentationNN(nn.Sequential):
     def forward(self, x):
         out = self.input_transform(x)
         out = self.mlp_1(out)
+        out = self.feature_transform(out)
         global_feature = self.mlp_2(out)
         global_feature = F.max_pool2d(global_feature, x.size(2))
         out = torch.cat([out, global_feature], 1)
