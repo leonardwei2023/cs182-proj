@@ -54,9 +54,9 @@ class ClassficationNN(nn.Sequential):
     def __init__(self, num_classes):
         super(ClassficationNN, self).__init__()
         self.input_transform = InputTransform()
-        self.mlp_1 = SharedMLP([3, 64, 64]),
-        self.feature_transform = FeatureTransform(),
-        self.mlp_2 = SharedMLP([64, 64, 128, 1024]),
+        self.mlp_1 = SharedMLP([3, 64, 64])
+        self.feature_transform = FeatureTransform()
+        self.mlp_2 = SharedMLP([64, 64, 128, 1024])
         self.mlp_3 = SharedMLP([1024, 512, 256, num_classes])
 
     def forward(self, x):
@@ -68,9 +68,26 @@ class ClassficationNN(nn.Sequential):
         out = self.mlp_3(out)
         return out
 
-# class SegmentationNN(nn.Sequential):
-#     def __init__(self, num_features: int):
-#         super(SegmentationNN, self).__init__()
+class SegmentationNN(nn.Sequential):
+    def __init__(self, num_features: int):
+        super(SegmentationNN, self).__init__()
+        self.input_transform = InputTransform()
+        self.mlp_1 = SharedMLP([3, 64, 64])
+        self.mlp_2 = SharedMLP([64, 64, 128, 1024])
+        self.mlp_3 = SharedMLP([1088, 512, 256, 128])
+        self.mlp_4 = SharedMLP([128, 128, num_features])
+    def forward(self, x):
+        out = self.input_transform(x)
+        out = self.mlp_1(out)
+        global_feature = self.mlp_2(out)
+        global_feature = F.max_pool2d(global_feature, x.size(2))
+        out = torch.cat([out, global_feature], 1)
+        out = self.mlp_3(out)
+        out = self.mlp_4(out)
+        return out
+
+
+
 
 if __name__ == '__main__':
     input_transform = T_net(3)
