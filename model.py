@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class SharedMLP(nn.Sequential):
     def __init__(self, layer_sizes):
@@ -41,14 +42,25 @@ class InputTransform(nn.Module):
 
 
 class FeatureTransform(nn.Module):
-    def __init__(self, size, reg=0.001):
+    def __init__(self, size=64, reg=0.001):
         super(FeatureTransform, self).__init__()
-        self.T_net = T_net(64)
+        self.T_net = T_net(size)
+        self.feat_size = size
 
     def forward(self, x):
         out = self.T_net(x)
-        # TODO: Add regulariation loss
-        return torch.bmm(torch.transpose(input, 1, 2), out).transpose(1, 2)
+        # TODO: Check the dim of regulariation loss
+        loss = self.regularize(out)
+        return loss
+    
+    def regularize(self, x):
+        I = torch.eye(self.feat_size)[None, :, :].to(device)
+        out = torch.bmm(x, x.transpose(2,1)) - I
+        loss = torch.mean(torch.norm(out, dim=(1,2)))
+        return loss
+
+
+
 
 class ClassficationNN(nn.Sequential):
     def __init__(self, num_classes):
