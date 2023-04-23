@@ -68,9 +68,9 @@ class ClassficationNN(nn.Sequential):
         out = self.mlp_3(out)
         return out
 
-# class SegmentationNN(nn.Sequential):
-#     def __init__(self, num_features: int):
-#         super(SegmentationNN, self).__init__()
+class SegmentationNN(nn.Sequential):
+    def __init__(self, num_features: int):
+        super(SegmentationNN, self).__init__()
 
 if __name__ == '__main__':
     input_transform = T_net(3)

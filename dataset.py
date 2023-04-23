@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from torch.utils.data import Dataset
 from pyntcloud import PyntCloud
-import subprocess
 
 class ShapeNetDataset(Dataset):
     def __init__(self, root, train=True, n=10000):
