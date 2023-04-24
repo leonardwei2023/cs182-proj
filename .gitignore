@@ -1,3 +1,5 @@
 __pycache__/
 datasets/
 .ipynb_checkpoints/
+__MACOSX/
+ModelNet10.zip

@@ -6,7 +6,6 @@ from torch.autograd import Variable
 from tqdm.notebook import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from pytorch_model_summary import summary
 
 from dataset import BatchPyntCloudToTensor
 
@@ -206,6 +205,7 @@ def plot_stats(epochs, train_losses, valid_losses, train_accs, valid_accs):
 
 
 if __name__ == '__main__':
+    from pytorch_model_summary import summary
     rand_data = Variable(torch.rand(32, 3, 2000)) # B X 3 X N
     shared_mlp = SharedMLP([3, 64, 64])
     out = shared_mlp(rand_data)
