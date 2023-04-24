@@ -3,5 +3,6 @@ datasets/
 .ipynb_checkpoints/
 __MACOSX/
 ModelNet10.zip
+ModelNet40.zip
 .DS_Store
 */.DS_Store
