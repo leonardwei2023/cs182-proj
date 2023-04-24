@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pytorch_model_summary import summary
 
+from dataset import BatchPyntCloudToTensor
+
 class MLP(nn.Sequential):
     def __init__(self, layer_sizes, dropout=0.7):
         layers = []
@@ -18,6 +20,7 @@ class MLP(nn.Sequential):
             layers.append(nn.ReLU())
         super(MLP, self).__init__(*layers)
             
+
 class SharedMLP(nn.Sequential):
     def __init__(self, layer_sizes):
         layers = []
@@ -55,8 +58,9 @@ class T_net(nn.Module):
 
         out = self.fc3(out)
         out = out.view(-1, self.size, self.size)
-        bias = torch.eye(self.size).expand(x.size(0), -1, -1)
+        bias = torch.eye(self.size, requires_grad=True).expand(x.size(0), -1, -1)
         return out + bias
+
 
 class InputTransform(nn.Module):
     def __init__(self):
@@ -69,19 +73,15 @@ class InputTransform(nn.Module):
 
 
 class FeatureTransform(nn.Module):
-    def __init__(self, reg=0.001):
+    def __init__(self):
         super(FeatureTransform, self).__init__()
         self.T_net = T_net(64)
-        self.reg = reg
-
-    def loss(self, A):
-        I = torch.eye(64).expand(A.size(0), -1, -1)
-        AA_T = torch.bmm(A, A.transpose(1, 2))
-        return torch.linalg.norm(I - AA_T, ord='fro', dim=(1,2))
 
     def forward(self, x):
         out = self.T_net(x)
+        self.A = out
         return torch.bmm(x.transpose(1, 2), out).transpose(1, 2)
+
 
 class ClassificationNN(nn.Module):
     def __init__(self, num_classes):
@@ -96,11 +96,15 @@ class ClassificationNN(nn.Module):
     def forward(self, x):
         out = self.input_transform(x)
         out = self.shared_mlp_1(out)
-        out = self.feature_transform(out)
-        out = self.shared_mlp_2(out)
+        feat_out = self.feature_transform(out)
+        out = self.shared_mlp_2(feat_out)
         out = F.max_pool1d(out, x.size(-1)).view(x.size(0), -1)
         out = self.mlp(out)
-        return out
+        return out, feat_out
+
+    def predict(self, x):
+        return self.forward(x)[0]
+
 
 class SegmentationNN(nn.Module):
     def __init__(self, num_features: int):
@@ -116,48 +120,67 @@ class SegmentationNN(nn.Module):
     def forward(self, x):
         out = self.input_transform(x)
         out = self.mlp_1(out)
-        out = self.feature_transform(out)
+        feat_out = self.feature_transform(feat_out)
         global_feature = self.mlp_2(out)
         global_feature = F.max_pool1d(global_feature, x.size(2))
         global_feature = global_feature.expand(-1, -1, x.size(-1))
         out = torch.cat([out, global_feature], 1)
         out = self.mlp_3(out)
         out = self.mlp_4(out)
-        return out
+        return out, feat_out
 
-# TODO: Figure out training loop
-# def train(model, optimizer, loss_fn, 
-#             train_dataset, valid_dataset, 
-#             epochs, device=torch.device('cpu')):
-#     for epoch in range(epochs):
-#             self.train() # Put model in training mode
-#             train_losses, valid_losses = [], []
-#             for x, y in tqdm(train_dataloader, unit="batch"):
-#                 x, y = x.to(device), y.to(device)
-#                 optimizer.zero_grad()
-#                 pred = self(x)
-#                 loss = loss_fn(pred, y)
-#                 loss.backward()
-#                 optimizer.step()
-#                 train_losses.append(loss.item())
-#             with torch.no_grad():
-#                 self.eval() # Put model in eval mode
-#                 num_correct = 0
-#                 for x, y in train_dataloader:
-#                     x, y = x.to(device), y.to(device)
-#                     pred = self(x)
-#                     num_correct += torch.sum(pred.argmax(1) == y).item()
-#                 self.train_accs.append(num_correct / len(train_dataset))
-#                 for x, y in valid_dataloader:
-#                     x, y = x.to(device), y.to(device)
-#                     pred = self(x)
-#                     valid_losses.append(loss.item())
-#                     num_correct += torch.sum(pred.argmax(1) == y).item()
-#                 self.valid_accs.append(num_correct / len(train_dataset))
-#             self.train_losses.append(np.mean(train_losses))
-#             self.valid_losses.append(np.mean(valid_losses))
-#             print('Finished Epoch {}\n training loss: {}, validation loss: {} \n training accuracy: {}, validation accuracy: {}'
-#                 .format(epoch+1, self.train_losses[-1], self.valid_losses[-1], self.train_accs[-1], self.valid_accs[-1]))
+    def predict(self, x):
+        return self.forward(x)[0]
+
+
+def loss_fn(preds, labels, feature_transform, reg=0.0001):
+    loss = torch.nn.NLLLoss()
+    def feat_loss(A):
+        I = torch.eye(64, requires_grad=True).expand(A.size(0), -1, -1)
+        AA_T = torch.bmm(A, A.transpose(1, 2))
+        return torch.linalg.norm(I - AA_T, ord='fro', dim=(1,2))
+    return loss(preds, labels) + reg * torch.mean(feat_loss(feature_transform))
+
+def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, device=torch.device('cpu')):
+    train_dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
+    valid_dataloader = DataLoader(validset, batch_size=batch_size, shuffle=True)
+
+    train_losses, train_accs = [], []
+    valid_losses, valid_accs = [], []
+    for epoch in range(epochs):
+        model.train()
+        # Train and get training loss and accuracy
+        train_loss, train_num_correct = [], []
+        for x, y in tqdm(train_dataloader, unit='batch'):
+            x, y = x.to(device), y.to(device)
+            optimizer.zero_grad()
+            pred, feat = model(x)
+            loss = loss_fn(pred, y, feat)
+            loss.backward()
+            optimizer.step()
+            train_loss.append(loss.item())
+            train_num_correct.append(torch.sum(pred.argmax(1) == y).item())
+        train_losses.append(np.mean(train_loss))
+        train_accs = train_num_correct / len(trainset)
+
+        model.eval()
+        # Get validation loss and accuracy
+        with torch.no_grad():
+            valid_loss, valid_num_correct = [], []
+            for x, y in tqdm(valid_dataloader, unit='batch'):
+                x, y = x.to(device), y.to(device)
+                pred, feat = model(x)
+                loss = loss_fn(pred, y, feat)
+                valid_loss.append(loss.item())
+                valid_num_correct.append(torch.sum(pred.argmax(1) == y).item())
+        
+        print('Finished Epoch {}\n training loss: {}, validation loss: {} \n training accuracy: {}, validation accuracy: {}'
+                .format(epoch+1, train_losses[-1], valid_losses[-1], train_accs[-1], valid_accs[-1]))
+
+    return train_losses, valid_losses, train_accs, valid_accs
+
+
+    
 
 def plot_stats(epochs, train_losses, valid_losses, train_accs, valid_accs):
     epochs = range(0, self.params['epochs'] + 1)
