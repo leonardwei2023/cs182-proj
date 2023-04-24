@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import torch
 from torch.utils.data import Dataset
 from pyntcloud import PyntCloud
 import matplotlib.pyplot as plt
@@ -30,12 +31,18 @@ class ShapeNetDataset(Dataset):
 
     def __getitem__(self, idx):
         '''
-        Returns (PyntCloud, label)
+        Returns (3 X N, label)
         '''
         path, label = self.df.loc[idx, 'path'], self.df.loc[idx, 'label']
         get_file = lambda p, t: PyntCloud.from_file(os.path.join(self.path, self.classes[label], t, p))
         test_train = 'train' if self.train else 'test'
-        return get_file(path, test_train).get_sample('mesh_random', n=self.n, as_PyntCloud=True), label        
+        pointcloud = get_file(path, test_train).get_sample('mesh_random', n=self.n)
+        return torch.Tensor(pointcloud.values).transpose(0,1), label  
+
+def BatchPyntCloudToTensor(pyntcloud):
+    # B x PyntCloud(N X 3) -> B x 3 X N 
+    pointcloud = pyntcloud.points.values
+    return torch.Tensor(pointcloud).transpose(1, 2)
 
 if __name__ == "__main__":
 
