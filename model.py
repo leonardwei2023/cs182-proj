@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -137,14 +137,14 @@ class SegmentationNN(nn.Module):
 def loss_fn(preds, labels, feature_transform, reg=0.0001):
     loss = torch.nn.NLLLoss()
     def feat_loss(A):
-        I = torch.eye(64, requires_grad=True).expand(A.size(0), -1, -1)
+        I = torch.eye(64, requires_grad=True).expand(A.size(0), -1, -1).to(device)
         AA_T = torch.bmm(A, A.transpose(1, 2))
         return torch.linalg.norm(I - AA_T, ord='fro', dim=(1,2))
     return loss(preds, labels) + reg * torch.mean(feat_loss(feature_transform))
 
 def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, device=torch.device('cpu')):
     train_dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
-    valid_dataloader = DataLoader(validset, batch_size=batch_size, shuffle=True)
+    valid_dataloader = DataLoader(validset, batch_size=batch_size, shuffle=False)
 
     train_losses, train_accs = [], []
     valid_losses, valid_accs = [], []
@@ -165,7 +165,7 @@ def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, device
             train_loss.append(loss.item())
             train_num_correct.append(torch.sum(pred.argmax(1) == y).item())
         train_losses.append(np.mean(train_loss))
-        train_accs = train_num_correct / len(trainset)
+        train_accs = np.asarray(train_num_correct) / len(trainset)
 
         model.eval()
         # Get validation loss and accuracy
