@@ -147,6 +147,9 @@ def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, device
 
     train_losses, train_accs = [], []
     valid_losses, valid_accs = [], []
+
+    model = model.to(device)
+    
     for epoch in range(epochs):
         model.train()
         # Train and get training loss and accuracy
