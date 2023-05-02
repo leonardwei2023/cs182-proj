@@ -60,6 +60,7 @@ o3d_cloud = o3d.geometry.PointCloud()
 o3d_cloud.points = o3d.utility.Vector3dVector(points)
 o3d.visualization.draw_geometries([o3d_cloud])
 ```
+![image](https://user-images.githubusercontent.com/106426767/235564933-aa714f97-18fc-4372-b94e-b3c885b37e85.png)
 
 
 ## Reference
