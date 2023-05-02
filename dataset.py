@@ -44,8 +44,8 @@ def BatchPyntCloudToTensor(pyntcloud):
     pointcloud = pyntcloud.points.values
     return torch.Tensor(pointcloud).transpose(1, 2)
 
-class S3DISDataset(Dataset):
-    # you can download dataset through this google form http://buildingparser.stanford.edu/dataset.html
+# class S3DISDataset(Dataset):
+#     # you can download dataset through this google form http://buildingparser.stanford.edu/dataset.html
 
 
 if __name__ == "__main__":

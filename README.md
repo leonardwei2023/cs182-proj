@@ -1,4 +1,6 @@
 # PointNet
+## About
+This resource was created as a final project for UC Berkeley's Deep Learning course CS 182.
 
 ## Installation
 - [Pytorch](https://pytorch.org/get-started/locally/)
@@ -47,11 +49,26 @@ train_data[10][0].points # Is in Pandas DataFrame
 
 # Visualizing PyntCloud (Only in notebook)
 train_data[10][0].plot(backend='threejs')
+```
 
+#### Visualization
+```python
 # Visualizing PyntCloud (In notebook or directly run py file)
 import open3d as o3d
 points = train_data[10][0].points.values
 o3d_cloud = o3d.geometry.PointCloud()
 o3d_cloud.points = o3d.utility.Vector3dVector(points)
 o3d.visualization.draw_geometries([o3d_cloud])
+```
+
+
+## Reference
+```
+@inproceedings{qi2017pointnet,
+  title={Pointnet: Deep learning on point sets for 3d classification and segmentation},
+  author={Qi, Charles R and Su, Hao and Mo, Kaichun and Guibas, Leonidas J},
+  booktitle={Proceedings of the IEEE conference on computer vision and pattern recognition},
+  pages={652--660},
+  year={2017}
+}
 ```
