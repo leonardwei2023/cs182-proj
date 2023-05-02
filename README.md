@@ -45,17 +45,14 @@ train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True)
 test_dataloader = DataLoader(test_data, batch_size=32, shuffle=True)
 
 # Getting points from point cloud
-train_data[10][0].points # Is in Pandas DataFrame
-
-# Visualizing PyntCloud (Only in notebook)
-train_data[10][0].plot(backend='threejs')
+train_data[10][0] # Torch Tensor [3,N]
 ```
 
 #### visualize it
 ```python
 # Visualizing PyntCloud
 import open3d as o3d
-points = (train_data[1000][0]).T
+points = (train_data[1000][0]).T # Torch Tensor [N,3]
 o3d_cloud = o3d.geometry.PointCloud()
 o3d_cloud.points = o3d.utility.Vector3dVector(points)
 o3d.visualization.draw_geometries([o3d_cloud])

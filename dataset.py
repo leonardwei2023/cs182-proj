@@ -44,9 +44,10 @@ def BatchPyntCloudToTensor(pyntcloud):
     pointcloud = pyntcloud.points.values
     return torch.Tensor(pointcloud).transpose(1, 2)
 
-# class S3DISDataset(Dataset):
+# class S3DISDataset(Dataset): /datautils
 #     # you can download dataset through this google form http://buildingparser.stanford.edu/dataset.html
-
+# and here we might use the dataloader with reference from https://github.com/yanx27/Pointnet_Pointnet2_pytorch/blob/master/data_utils/S3DISDataLoader.py
+# /datautils need to be modified.
 
 if __name__ == "__main__":
 
