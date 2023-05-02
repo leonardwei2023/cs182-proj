@@ -32,7 +32,7 @@ You need to fill the google form for access, and it might take 1 hour to downloa
 - [ShapeNet](https://shapenet.org/download/shapenetcore)
 You might need to register an account for access, and it takes 1 hour to download it.
 
-## Files
+## How to load 3D Data
 #### **dataset.py**
 ```python
 # Load train/test dataset (3 X N)
@@ -51,7 +51,7 @@ train_data[10][0].points # Is in Pandas DataFrame
 train_data[10][0].plot(backend='threejs')
 ```
 
-#### Visualization
+#### visualize it
 ```python
 # Visualizing PyntCloud (In notebook or directly run py file)
 import open3d as o3d
