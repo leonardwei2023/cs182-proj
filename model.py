@@ -106,6 +106,31 @@ class ClassificationNN(nn.Module):
     def predict(self, x):
         return self.forward(x)[0]
 
+class PartSegmentationNN(nn.Module):
+    def __init__(self, num_features: int):
+        super(PartSegmentationNN, self).__init__()
+        self.input_transform = InputTransform()
+        self.feature_transform = FeatureTransform()
+
+        self.mlp_1 = SharedMLP([3, 64, 64])
+        self.mlp_2 = SharedMLP([64, 64, 128, 1024])
+        self.mlp_3 = SharedMLP([1088, 512, 256, 128])
+        self.mlp_4 = SharedMLP([128, 128, num_features])
+        
+    def forward(self, x):
+        out = self.input_transform(x)
+        out = self.mlp_1(out)
+        feat_out = self.feature_transform(feat_out)
+        global_feature = self.mlp_2(out)
+        global_feature = F.max_pool1d(global_feature, x.size(2))
+        global_feature = global_feature.expand(-1, -1, x.size(-1))
+        out = torch.cat([out, global_feature], 1)
+        out = self.mlp_3(out)
+        out = self.mlp_4(out)
+        return out, feat_out
+
+    def predict(self, x):
+        return self.forward(x)[0]
 
 class SegmentationNN(nn.Module):
     def __init__(self, num_features: int):

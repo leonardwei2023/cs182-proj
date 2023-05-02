@@ -10,6 +10,7 @@ import argparse
 
 def parse():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model_type', type=str, default = 'cls', help = 'cls or seg')
     parser.add_argument('--dataset_root', type=str, default = './datasets/ModelNet10', help='dataset root dir')
     parser.add_argument('--epochs', type=int, default = 20, help='epochs')
     parser.add_argument('--batch_size', type=int, default = 32, help='batch size')
@@ -53,5 +54,17 @@ def train_pointNet_cls():
     optimizer = torch.optim.Adam(classification_model.parameters(), lr=opt.lr)
     train(classification_model, trainset, valset, optimizer, epochs=opt.epochs, batch_size=opt.batch_size, device=device)
 
+# def train_pointNet_seg():
+#     opt = parse()
+#     load_data(opt)
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     trainset, valset = prepare_dataset(opt)
+#     segmentation_model = SegmentationNN(opt.cls_num).to(device)
+
+#     optimizer = torch.optim.Adam(segmentation_model.parameters(), lr=opt.lr)
+#     train(segmentation_model, trainset, valset, optimizer, epochs=opt.epochs, batch_size=opt.batch_size, device=device)
+
+# def train_pointNet():
+#     if 
 if __name__=='__main__':
     train_pointNet_cls()

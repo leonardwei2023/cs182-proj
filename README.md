@@ -9,8 +9,26 @@
 - TODO: Add missing packages
 
 ## Datasets
+#### For classfication
 - [ModelNet10](http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip)
 - [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip)
+You can download them using following codes
+```python
+def load_data(opt):
+    if not os.path.exists('./ModelNet10.zip'):
+        subprocess.run(["wget", "http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip"])
+    subprocess.run(["unzip", "-o", "ModelNet10.zip", "-d", "./datasets/"])
+    if not os.path.exists('./ModelNet40.zip'):
+        subprocess.run(["wget", "http://modelnet.cs.princeton.edu/ModelNet40.zip"])
+    subprocess.run(["unzip", "-o", "ModelNet40.zip", "-d", "./datasets/"])
+```
+#### For Semantic Segmentation
+- [S3DIS](http://buildingparser.stanford.edu/dataset.html)
+You need to fill the google form for access, and it might take 1 hour to download it.
+
+#### For Part Segmentation
+- [ShapeNet](https://shapenet.org/download/shapenetcore)
+You might need to register an account for access, and it takes 1 hour to download it.
 
 ## Files
 #### **dataset.py**
