@@ -53,9 +53,9 @@ train_data[10][0].plot(backend='threejs')
 
 #### visualize it
 ```python
-# Visualizing PyntCloud (In notebook or directly run py file)
+# Visualizing PyntCloud
 import open3d as o3d
-points = train_data[10][0].points.values
+points = (train_data[1000][0]).T
 o3d_cloud = o3d.geometry.PointCloud()
 o3d_cloud.points = o3d.utility.Vector3dVector(points)
 o3d.visualization.draw_geometries([o3d_cloud])
