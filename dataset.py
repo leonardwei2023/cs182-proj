@@ -20,7 +20,7 @@ class ShapeNetDataset(Dataset):
                 path = os.path.join(self.path, c, "train")
             else:
                 path = os.path.join(self.path, c, "test")
-            dir_list = os.listdir(path)
+            dir_list = [dir for dir in os.listdir(path) if dir.endswith('.off')]
             label_list = [label]*len(dir_list)
             df = pd.DataFrame(list(zip(dir_list, label_list)), columns=['path', 'label'])
             self.df = pd.concat((self.df, df))

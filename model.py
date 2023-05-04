@@ -3,12 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from pytorch_model_summary import summary
 
 from dataset import BatchPyntCloudToTensor
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class MLP(nn.Sequential):
     def __init__(self, layer_sizes, dropout=0.7):
@@ -58,7 +59,7 @@ class T_net(nn.Module):
 
         out = self.fc3(out)
         out = out.view(-1, self.size, self.size)
-        bias = torch.eye(self.size, requires_grad=True).expand(x.size(0), -1, -1)
+        bias = torch.eye(self.size, requires_grad=True).expand(x.size(0), -1, -1).to(device)
         return out + bias
 
 
@@ -136,24 +137,55 @@ class SegmentationNN(nn.Module):
 def loss_fn(preds, labels, feature_transform, reg=0.0001):
     loss = torch.nn.NLLLoss()
     def feat_loss(A):
-        I = torch.eye(64, requires_grad=True).expand(A.size(0), -1, -1)
+        I = torch.eye(64, requires_grad=True).expand(A.size(0), -1, -1).to(device)
         AA_T = torch.bmm(A, A.transpose(1, 2))
         return torch.linalg.norm(I - AA_T, ord='fro', dim=(1,2))
     return loss(preds, labels) + reg * torch.mean(feat_loss(feature_transform))
 
-def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, device=torch.device('cpu')):
+class Logger():
+    def __init__(self):
+        self._log = {'train loss': [], 
+                     'valid loss': [], 
+                     'train accuracy': [], 
+                     'valid accuracy': []}
+    
+    def log(self, name: str, value):
+        if name not in self._log.keys():
+            raise NotImplementedError
+        self._log[name].append(value)
+
+    def plot_loss(self):
+        train_loss, valid_loss = self._log['train loss'], self._log['valid loss']
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.suptitle('Iterations vs Loss')
+        fig.supxlabel('Iterations')
+        fig.supylabel('Loss')
+        ax1.plot(range(len(train_loss)), train_loss, label='training')
+        ax1.set_title('Training')
+        ax2.plot(range(len(valid_loss)), valid_loss, label='validation')
+        ax2.set_title('Validation')
+
+    def plot_accuracy(self):
+        train_acc, valid_acc = self._log['train accuracy'], self._log['valid accuracy']
+        plt.plot(range(len(train_acc)), train_acc, label='training')
+        plt.plot(range(len(valid_acc)), valid_acc, label='validation')
+        plt.title('Epochs vs Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+
+
+def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, logger=None):
     train_dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
     valid_dataloader = DataLoader(validset, batch_size=batch_size, shuffle=True)
 
-    train_losses, train_accs = [], []
-    valid_losses, valid_accs = [], []
-
     model = model.to(device)
-    
-    for epoch in range(epochs):
+
+    train_loss, valid_loss = 0.0, 0.0
+    for _ in range(epochs):
         model.train()
         # Train and get training loss and accuracy
-        train_loss, train_num_correct = [], []
+        train_num_correct = 0
         for x, y in tqdm(train_dataloader, unit='batch'):
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
@@ -161,49 +193,27 @@ def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, device
             loss = loss_fn(pred, y, feat)
             loss.backward()
             optimizer.step()
-            train_loss.append(loss.item())
-            train_num_correct.append(torch.sum(pred.argmax(1) == y).item())
-        train_losses.append(np.mean(train_loss))
-        train_accs = train_num_correct / len(trainset)
+            train_loss += loss.item()
+            train_num_correct += torch.sum(pred.argmax(1) == y).item()
+            logger.log('train loss', train_loss)
+        logger.log('train accuracy', train_num_correct / len(train_dataloader))
 
         model.eval()
         # Get validation loss and accuracy
         with torch.no_grad():
-            valid_loss, valid_num_correct = [], []
+            valid_num_correct = 0
             for x, y in tqdm(valid_dataloader, unit='batch'):
                 x, y = x.to(device), y.to(device)
                 pred, feat = model(x)
                 loss = loss_fn(pred, y, feat)
-                valid_loss.append(loss.item())
-                valid_num_correct.append(torch.sum(pred.argmax(1) == y).item())
-        
-        print('Finished Epoch {}\n training loss: {}, validation loss: {} \n training accuracy: {}, validation accuracy: {}'
-                .format(epoch+1, train_losses[-1], valid_losses[-1], train_accs[-1], valid_accs[-1]))
-
-    return train_losses, valid_losses, train_accs, valid_accs
-
-
-    
-
-def plot_stats(epochs, train_losses, valid_losses, train_accs, valid_accs):
-    epochs = range(0, self.params['epochs'] + 1)
-    _, axs = plt.subplots(1, 2, layout='constrained', sharex=True, sharey=True)
-    axs[0].plot(epochs, [0] + train_losses, label='training')
-    axs[0].plot(epochs, [0] + valid_losses, label='validation')
-    axs[0].title('Epochs vs Loss')
-    axs[0].xlabel('Epochs')
-    axs[0].ylabel('Loss')
-    axs[0].legend()
-
-    axs[1].plot(epochs, [0] + train_accs, label='training')
-    axs[1].plot(epochs, [0] + valid_accs, label='validation')
-    axs[1].title('Epochs vs Accuracy')
-    axs[1].xlabel('Epochs')
-    axs[1].ylabel('Accuracy')
-    axs[1].legend()
+                valid_loss += loss.item()
+                valid_num_correct += torch.sum(pred.argmax(1) == y).item()
+                logger.log('valid loss', valid_loss)
+        logger.log('valid accuracy', valid_num_correct / len(valid_dataloader))
 
 
 if __name__ == '__main__':
+    from pytorch_model_summary import summary
     rand_data = Variable(torch.rand(32, 3, 2000)) # B X 3 X N
     shared_mlp = SharedMLP([3, 64, 64])
     out = shared_mlp(rand_data)
