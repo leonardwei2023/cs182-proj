@@ -22,18 +22,22 @@ def parse():
 
     return parser.parse_args()
 
-def load_data(opt):
-    if os.path.exists(opt.dataset_root):
+def load_data(path):
+    if os.path.exists(path):
         pass
     else:
-        if opt.dataset_root=='./datasets/ModelNet10':
+        if not os.path.exists("./datasets/"): os.makedirs("./datasets/")
+        if path=='./datasets/ModelNet10':
             if not os.path.exists('./ModelNet10.zip'):
-                subprocess.run(["wget", "http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip"])
-            subprocess.run(["unzip", "-o", "ModelNet10.zip", "-d", "./datasets/"])
-        if opt.dataset_root=='./datasets/ModelNet40':
+                print('downloading')
+                process = subprocess.Popen(["wget", "http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip"])
+                process.wait()
+            subprocess.Popen(["unzip", "ModelNet10.zip", "-d", "./datasets/"])
+        if path=='./datasets/ModelNet40':
             if not os.path.exists('./ModelNet40.zip'):
-                subprocess.run(["wget", "http://modelnet.cs.princeton.edu/ModelNet40.zip"])
-            subprocess.run(["unzip", "-o", "ModelNet40.zip", "-d", "./datasets/"])
+                process = subprocess.Popen(["wget", "http://modelnet.cs.princeton.edu/ModelNet40.zip"])
+            process.wait()
+            subprocess.Popen(["unzip", "-o", "ModelNet40.zip", "-d", "./datasets/"])
 
 def prepare_dataset(opt):
     trainset = ShapeNetDataset(opt.dataset_root, train=True, n=opt.point_num)
@@ -46,7 +50,7 @@ def prepare_dataset(opt):
 
 def train_pointNet_cls():
     opt = parse()
-    load_data(opt)
+    load_data(opt.dataset_root)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     trainset, valset = prepare_dataset(opt)
     classification_model = ClassificationNN(opt.cls_num).to(device)

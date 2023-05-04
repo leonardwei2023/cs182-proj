@@ -1,6 +1,8 @@
 # PointNet
 ## About
-This resource was created as a final project for UC Berkeley's Deep Learning course CS 182.
+This resource was created as a final project for UC Berkeley's Deep Learning course CS 182. We reimplemented PointNet and create a homework for other students to study it. You can start with the following materials: 
+- Notebook / Colab Link: .
+- Summary Document.
 
 ## Installation
 - [Pytorch](https://pytorch.org/get-started/locally/)
@@ -8,6 +10,7 @@ This resource was created as a final project for UC Berkeley's Deep Learning cou
 - pandas
 - ipywidgets
 - threejs
+- open3d
 - TODO: Add missing packages
 
 ## Datasets
