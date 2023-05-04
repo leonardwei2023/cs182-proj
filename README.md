@@ -15,9 +15,10 @@ This resource was created as a final project for UC Berkeley's Deep Learning cou
 
 ## Datasets
 #### For classfication
+- Student will implement this part and train this model.
 - [ModelNet10](http://3dvision.princeton.edu/projects/2014/3DShapeNets/ModelNet10.zip)
 - [ModelNet40](http://modelnet.cs.princeton.edu/ModelNet40.zip)
-You can download them using following codes
+You can download the dataset with the following codes
 ```python
 def load_data(opt):
     if not os.path.exists('./ModelNet10.zip'):
@@ -27,13 +28,13 @@ def load_data(opt):
         subprocess.run(["wget", "http://modelnet.cs.princeton.edu/ModelNet40.zip"])
     subprocess.run(["unzip", "-o", "ModelNet40.zip", "-d", "./datasets/"])
 ```
+
 #### For Semantic Segmentation
-- [S3DIS](http://buildingparser.stanford.edu/dataset.html)
-You need to fill the google form for access, and it might take 1 hour to download it.
+- Student only need to construct the model structure, and then use pretrained model to do evaluation on test samples.
+- You might need to fill the google form for access, and it might take 1 hour to download the dataset [S3DIS](http://buildingparser.stanford.edu/dataset.html). It is not necessary for you to download it.
 
 #### For Part Segmentation
-- [ShapeNet](https://shapenet.org/download/shapenetcore)
-You might need to register an account for access, and it takes 1 hour to download it.
+- You might need to register an account for access, and it takes 1 hour to download [ShapeNet](https://shapenet.org/download/shapenetcore). It is not necessary for you to download it.
 
 ## How to load 3D Data
 #### **dataset.py**
