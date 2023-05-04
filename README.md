@@ -35,6 +35,7 @@ def load_data(opt):
 
 #### For Part Segmentation
 - You might need to register an account for access, and it takes 1 hour to download [ShapeNet](https://shapenet.org/download/shapenetcore). It is not necessary for you to download it.
+- Students will mainly use PointNet for classfication, if you want to use it for part segmentation, feel free to use the above dataset to train your model.
 
 ## How to load 3D Data
 #### **dataset.py**
