@@ -93,6 +93,7 @@ class ClassificationNN(nn.Module):
         self.shared_mlp_1 = SharedMLP([3, 64, 64])
         self.shared_mlp_2 = SharedMLP([64, 64, 128, 1024])
         self.mlp = MLP([1024, 512, 256, num_classes])
+        self.logsoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, x):
         out = self.input_transform(x)
@@ -101,6 +102,7 @@ class ClassificationNN(nn.Module):
         out = self.shared_mlp_2(feat_out)
         out = F.max_pool1d(out, x.size(-1)).view(x.size(0), -1)
         out = self.mlp(out)
+        out = self.logsoftmax(out)
         return out, feat_out
 
     def predict(self, x):
@@ -174,6 +176,11 @@ class Logger():
         plt.ylabel('Accuracy')
         plt.legend()
 
+    def plot_gradient(self):
+        gradients = self._log['gradients']
+        print(len(gradients))
+        print(gradients[0].size())
+
 
 def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, logger=None):
     train_dataloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
@@ -181,12 +188,14 @@ def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, logger
 
     model = model.to(device)
 
-    train_loss, valid_loss = 0.0, 0.0
-    for _ in range(epochs):
+    # for _ in range(epochs):
+    for _ in tqdm(range(epochs)):
+        train_loss, valid_loss = 0.0, 0.0
         model.train()
         # Train and get training loss and accuracy
         train_num_correct = 0
-        for x, y in tqdm(train_dataloader, unit='batch'):
+        # for x, y in tqdm(train_dataloader, unit='batch'):
+        for x, y in train_dataloader:
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
             pred, feat = model(x)
@@ -202,7 +211,8 @@ def train(model, trainset, validset, optimizer, epochs=10, batch_size=32, logger
         # Get validation loss and accuracy
         with torch.no_grad():
             valid_num_correct = 0
-            for x, y in tqdm(valid_dataloader, unit='batch'):
+            # for x, y in tqdm(valid_dataloader, unit='batch'):
+            for x, y in valid_dataloader:
                 x, y = x.to(device), y.to(device)
                 pred, feat = model(x)
                 loss = loss_fn(pred, y, feat)
